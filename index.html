@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>N0Launcher — Launcher Minecraft</title>
+    <meta name="description" content="N0Launcher" />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.0/css/all.min.css"
+    />
+  </head>
+  <body class="mc-background">
+    <div class="mc-world" aria-hidden="true">
+      <div class="mc-stars"></div>
+      <div class="mc-moon"></div>
+      <div class="mc-hills"></div>
+      <div class="mc-hills mc-hills-2"></div>
+      <div class="mc-tree t1"></div>
+      <div class="mc-tree t2"></div>
+      <div class="mc-tree t3"></div>
+      <div class="mc-tree t4"></div>
+      <div class="mc-cloud c1"></div>
+      <div class="mc-cloud c2"></div>
+      <div class="mc-cloud c3"></div>
+    </div>
+
+    <header class="nav">
+      <div class="nav-inner">
+        <div class="brand">
+          <span class="brand-mark">
+            <img src="./assets/N0Launcher.png" alt="N0Launcher" />
+          </span>
+          N0Launcher
+        </div>
+        <div class="lang-switch" id="langSwitch">
+          <button
+            class="lang-btn"
+            id="langToggle"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-label="Chọn ngôn ngữ"
+          >
+            <span class="lang-icon">🌐</span>
+            <span id="langCurrent">VI</span>
+          </button>
+          <div class="lang-menu" id="langMenu">
+            <button type="button" class="lang-option" data-lang="vi">🇻🇳 Tiếng Việt</button>
+            <button type="button" class="lang-option" data-lang="en">🇬🇧 English</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="block b1"></div>
+      <div class="block b2"></div>
+      <div class="block b3"></div>
+      <div class="block b4"></div>
+      <div class="block b5"></div>
+      <div class="container">
+        <section>
+          <div class="wrap hero-grid">
+            <div>
+              <div class="eyebrow" data-i18n="hero.eyebrow">Những khối vuông kì diệu =^-^=</div>
+              <h1 class="title">N0<span class="hl">Launcher</span></h1>
+              <p class="lede" data-i18n="hero.lede">
+                N0Launcher là trình cài đặt tối giản, giao diện tiếng Việt hoàn toàn — hỗ trợ
+                Vanilla, Forge, NeoForge và Fabric, đăng nhập Microsoft, Ely.by hoặc Offline, kèm
+                quản lý mod và resource pack ngay trong app.
+              </p>
+              <div class="btn-row">
+                <a
+                  class="mc-btn mc-btn-primary mc-block-btn"
+                  id="installLauncher"
+                  href="https://github.com/panadorado/N0Launcher/releases/latest"
+                  ><span class="mc-block-icon"></span>
+                  <span data-i18n="cta.downloadLatest">Tải bản mới nhất</span></a
+                >
+                <a class="mc-btn mc-btn-ghost" href="https://github.com/panadorado/N0Launcher"
+                  ><i class="fa-brands fa-github"></i>GitHub Repository</a
+                >
+              </div>
+            </div>
+
+            <div class="slider-mock">
+              <div class="slider-container">
+                <div class="slides" id="slides">
+                  <!-- Slide 1: Official -->
+                  <div class="slide official">
+                    <img src="./assets/slider/slider-1.png" alt="Official Minecraft Launcher" />
+                    <div class="caption">
+                      <h2 data-i18n="slide1.title">Đăng nhập</h2>
+                      <p data-i18n="slide1.desc">
+                        Cho phép bạn đăng nhập bằng tài khoản Microsoft, Ely.by hoặc Offline. Hỗ trợ
+                        cả Mojang & Microsoft.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Slide 2: Prism -->
+                  <div class="slide prism">
+                    <img src="./assets/slider/slider-2.png" alt="Prism Launcher" />
+                    <div class="caption">
+                      <h2 data-i18n="slide2.title">Giao diện</h2>
+                      <p data-i18n="slide2.desc">
+                        Được lây cảm hứng từ Prism Launcher, N0Launcher có giao diện tối giản, dễ sử
+                        dụng, và hoàn toàn bằng tiếng Việt.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Slide 3: CurseForge -->
+                  <div class="slide curseforge">
+                    <img src="./assets/slider/slider-3.png" alt="CurseForge App" />
+                    <div class="caption">
+                      <h2 data-i18n="slide3.title">Cấu hình phiên bản</h2>
+                      <p data-i18n="slide3.desc">
+                        Vì được lấy ý tưởng từ Minecraft Launcher, N0Launcher cho phép bạn chọn và
+                        quả lý phiên bản Minecraft, cài đặt mod, resource pack, và các thiết lập
+                        khác ngay trong app.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Slide 4: Modrinth -->
+                  <div class="slide modrinth">
+                    <img src="./assets/slider/slider-4.png" alt="Modrinth App" />
+                    <div class="caption">
+                      <h2 data-i18n="slide4.title">Cài đặt phiên bản modloader</h2>
+                      <p data-i18n="slide4.desc">
+                        Hỗ trợ cài đặt Forge, NeoForge và Fabric, với các phiên bản modloader mới
+                        nhất. Bạn có thể cài đặt modloader ngay trong app mà không cần mở trình cài
+                        đặt riêng.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Slide 5: GDLauncher -->
+                  <div class="slide gdlauncher">
+                    <img src="./assets/slider/slider-5.png" alt="GDLauncher" />
+                    <div class="caption">
+                      <h2 data-i18n="slide5.title">Cài đặt</h2>
+                      <p data-i18n="slide5.desc">
+                        Cho phép bạn chọn thư mục để cài đặt Minecarft, cập nhật phiên launcher, set
+                        ram tự động hoặc tự chọn, tự động đổi nguồn mirror tải game (ưu tiên nguồn
+                        chính thức), và nhiều tính năng khác.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="nav-btn prev" onclick="changeSlide(-1)">❮</button>
+                <button class="nav-btn next" onclick="changeSlide(1)">❯</button>
+
+                <div class="dots" id="dots"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tech">
+          <div class="wrap">
+            <div class="sec-head">
+              <div class="eyebrow" data-i18n="tech.eyebrow">
+                Sử dụng NodeJS - Electron với các packages!
+              </div>
+              <p class="cursor typewriter-animation" data-i18n="tech.desc">
+                Được tổng hợp và xây dựng trên các gói được cộng đồng tin cậy.
+              </p>
+            </div>
+            <div class="chip-row">
+              <a class="chip" href="https://www.electronjs.org/">Electron</a>
+              <a class="chip" href="https://nodejs.org/">Node.js</a>
+              <a class="chip" href="https://vitejs.dev/">Vite</a>
+              <a class="chip" href="https://www.npmjs.com/package/@xmcl/core">@xmcl/core</a>
+              <a class="chip" href="https://www.npmjs.com/package/@xmcl/installer"
+                >@xmcl/installer</a
+              >
+              <a class="chip" href="https://www.npmjs.com/package/@xmcl/task">@xmcl/task</a>
+              <a class="chip" href="https://www.npmjs.com/package/@xmcl/mod-parser"
+                >@xmcl/mod-parser</a
+              >
+              <a class="chip" href="https://www.npmjs.com/package/@xmcl/resourcepack"
+                >@xmcl/resourcepack</a
+              >
+              <a class="chip" href="https://www.npmjs.com/package/msmc">msmc</a>
+              <a class="chip" href="https://www.npmjs.com/package/undici">undici</a>
+              <a class="chip" href="https://www.electron.build/">electron-builder</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer>
+      <div class="wrap footer-inner">
+        <p data-i18n="footer.copyright">Copyright © 2026 N0Launcher — Panadorado.</p>
+        <div class="foot-links">
+          <a href="https://github.com/panadorado/N0Launcher">GitHub</a>
+          <a href="https://github.com/panadorado/N0Launcher/issues" data-i18n="footer.reportBug"
+            >Báo lỗi</a
+          >
+          <a href="https://github.com/panadorado/N0Launcher/releases">Releases</a>
+        </div>
+      </div>
+    </footer>
+
+    <div class="achievement" id="ach">
+      <div class="ach-icon">🏆</div>
+      <div>
+        <div class="ach-title" data-i18n="ach.title">ĐÃ MỞ KHÓA</div>
+        <div class="ach-sub" data-i18n="ach.sub">Đang khám phá N0Launcher</div>
+      </div>
+    </div>
+    <script src="./js/lang.js"></script>
+    <script src="./js/download.js"></script>
+    <script src="./js/index.js"></script>
+    <script src="./js/slider.js"></script>
+  </body>
+</html>
