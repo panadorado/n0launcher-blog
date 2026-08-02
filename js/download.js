@@ -16,16 +16,32 @@ async function detectOS() {
   return 'unknown';
 }
 
-// 2. Ứng với mỗi OS, ưu tiên đuôi file nào trong assets của release
-const EXT_BY_OS = {
-  windows: ['.exe', '.msi'],
-  macos: ['.dmg', '.pkg'],
-  linux: ['.appimage', '.deb', '.rpm'],
-};
+// 2. Chọn asset phù hợp theo OS (ưu tiên Setup trên Windows)
+function pickAssetForOS(assets, os, version) {
+  if (os === 'windows') {
+    // Ưu tiên bản Setup theo version
+    const setupName = `N0Launcher-Setup-${version}.exe`;
+    const setup = assets.find((a) => a.name === setupName);
+    if (setup) return setup;
 
-function pickAssetForOS(assets, os) {
+    // Fallback: bất kỳ file .exe nào chứa Setup
+    const anySetup = assets.find(
+      (a) => a.name.toLowerCase().includes('setup') && a.name.toLowerCase().endsWith('.exe')
+    );
+    if (anySetup) return anySetup;
+
+    // Fallback cuối: file .exe portable
+    return assets.find((a) => a.name.toLowerCase().endsWith('.exe'));
+  }
+
+  // Các hệ khác (nếu sau này có)
+  const EXT_BY_OS = {
+    macos: ['.dmg', '.pkg'],
+    linux: ['.appimage', '.deb', '.rpm'],
+  };
   const exts = EXT_BY_OS[os];
   if (!exts) return null;
+
   for (const ext of exts) {
     const found = assets.find((a) => a.name.toLowerCase().endsWith(ext));
     if (found) return found;
@@ -33,18 +49,31 @@ function pickAssetForOS(assets, os) {
   return null;
 }
 
-// 3. Tải file về dạng blob, rồi mở hộp thoại chọn nơi lưu nếu trình duyệt hỗ trợ
+// 3. Lưu file bằng File System Access API (nếu hỗ trợ) hoặc fallback download
 async function saveWithPicker(blob, suggestedName) {
   if (window.showSaveFilePicker) {
-    // Chrome / Edge — mở hộp thoại thật, người dùng tự chọn thư mục + tên file
-    const handle = await window.showSaveFilePicker({ suggestedName });
-    const writable = await handle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-    return;
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [
+          {
+            description: 'Executable',
+            accept: { 'application/octet-stream': ['.exe'] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch (err) {
+      // Người dùng bấm Huỷ → không làm gì
+      if (err.name === 'AbortError') return;
+      throw err;
+    }
   }
-  // Firefox / Safari — không có quyền mở hộp thoại chọn thư mục (giới hạn của chính trình duyệt)
-  // -> rơi về cách cũ: tự lưu vào thư mục Downloads mặc định
+
+  // Fallback cho Firefox / Safari / trình duyệt cũ
   const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = blobUrl;
@@ -55,36 +84,69 @@ async function saveWithPicker(blob, suggestedName) {
   URL.revokeObjectURL(blobUrl);
 }
 
-// 4. Gắn vào nút bấm
-document.getElementById('installLauncher').addEventListener('click', async (e) => {
-  e.preventDefault();
-  const btn = e.currentTarget;
+// 4. Hàm chính: tải bản mới nhất
+async function downloadLatestLauncher() {
+  const btn = document.getElementById('installLauncher');
+  const originalText = btn?.textContent;
 
   try {
-    const os = await detectOS();
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Đang kiểm tra phiên bản...';
+    }
 
+    // Lấy release mới nhất
     const res = await fetch('https://api.github.com/repos/panadorado/N0Launcher/releases/latest', {
       headers: { 'User-Agent': 'Minecraft-Launcher' },
-      signal: AbortSignal.timeout(15_000), // 15 giây — tránh treo vô hạn nếu mạng lỗi
+      signal: AbortSignal.timeout(15000),
     });
 
-    if (!res.ok) throw new Error('Không lấy được release mới nhất');
+    if (!res.ok) throw new Error('Không lấy được thông tin release mới nhất');
+
     const release = await res.json();
+    const version = release.tag_name.replace(/^v/, ''); // "1.0.5"
+    const os = await detectOS();
 
-    const asset = pickAssetForOS(release.assets, os);
-    if (!asset) throw new Error('Không có bản cài phù hợp cho hệ điều hành này');
+    const asset = pickAssetForOS(release.assets, os, version);
+    if (!asset) {
+      throw new Error('Không tìm thấy file cài đặt phù hợp với hệ điều hành của bạn');
+    }
 
-    // Phải tải hẳn về bộ nhớ (blob) trước — showSaveFilePicker cần dữ liệu thật để ghi ra file,
-    // không thể chỉ đưa link như cách <a download> làm
+    if (btn) btn.textContent = `Đang tải ${asset.name}...`;
+
+    // Tải file về dạng blob
     const fileRes = await fetch(asset.browser_download_url, {
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(120000), // 2 phút (file ~100MB)
     });
+
+    if (!fileRes.ok) throw new Error('Tải file thất bại');
+
     const blob = await fileRes.blob();
 
+    // Mở hộp thoại lưu file
     await saveWithPicker(blob, asset.name);
+
+    if (btn) btn.textContent = 'Tải thành công!';
   } catch (err) {
-    if (err.name === 'AbortError') return; // người dùng tự bấm Huỷ ở hộp thoại -> không phải lỗi, im lặng
     console.error(err);
+
+    // Nếu người dùng huỷ hộp thoại thì im lặng
+    if (err.name === 'AbortError') return;
+
+    // Fallback: mở trang releases
     window.open('https://github.com/panadorado/N0Launcher/releases/latest', '_blank');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      setTimeout(() => {
+        btn.textContent = originalText || 'Tải Launcher';
+      }, 2000);
+    }
   }
+}
+
+// 5. Gắn sự kiện vào nút
+document.getElementById('installLauncher')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  downloadLatestLauncher();
 });
