@@ -49,45 +49,9 @@ function pickAssetForOS(assets, os, version) {
   return null;
 }
 
-// 3. Lưu file bằng File System Access API (nếu hỗ trợ) hoặc fallback download
-async function saveWithPicker(blob, suggestedName) {
-  if (window.showSaveFilePicker) {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName,
-        types: [
-          {
-            description: 'Executable',
-            accept: { 'application/octet-stream': ['.exe'] },
-          },
-        ],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (err) {
-      // Người dùng bấm Huỷ → không làm gì
-      if (err.name === 'AbortError') return;
-      throw err;
-    }
-  }
-
-  // Fallback cho Firefox / Safari / trình duyệt cũ
-  const blobUrl = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = blobUrl;
-  a.download = suggestedName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(blobUrl);
-}
-
 const btn = document.getElementById('installLauncher');
 
-// 4. Hàm chính: tải bản mới nhất
-// 4. Hàm chính: tải bản mới nhất (Cách 1 - ổn định nhất)
+// 3. Hàm chính: tải bản mới nhất
 async function downloadLatestLauncher() {
   const originalText = btn?.textContent;
 
@@ -100,10 +64,6 @@ async function downloadLatestLauncher() {
     // Lấy release mới nhất
     const res = await fetch('https://api.github.com/repos/panadorado/N0Launcher/releases/latest', {
       headers: {
-        Accept: 'application/json',
-        crossorigin: true,
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': true,
         'User-Agent': 'Minecraft-Launcher',
       },
       signal: AbortSignal.timeout(15000),
@@ -122,11 +82,11 @@ async function downloadLatestLauncher() {
 
     if (btn) btn.textContent = `Đang tải ${asset.name}...`;
 
-    // Cách tải ổn định: tạo thẻ <a> và click
+    // Cách tải ổn định: tạo thẻ <a> và click (không bị CORS)
     const a = document.createElement('a');
     a.href = asset.browser_download_url;
-    a.download = asset.name; // gợi ý tên file
-    a.target = '_blank'; // phòng trình duyệt chặn
+    a.download = asset.name;
+    a.target = '_blank';
     a.rel = 'noopener noreferrer';
 
     document.body.appendChild(a);
@@ -152,7 +112,7 @@ async function downloadLatestLauncher() {
   }
 }
 
-// 5. Gắn sự kiện vào nút
+// 4. Gắn sự kiện vào nút
 btn?.addEventListener('click', async (e) => {
   e.preventDefault();
   await downloadLatestLauncher();
