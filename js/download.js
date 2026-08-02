@@ -106,7 +106,9 @@ async function downloadLatestLauncher() {
     if (btn) {
       btn.disabled = false;
       setTimeout(() => {
-        btn.textContent = originalText || 'Tải Launcher';
+        btn.innerHTML = `<span class="mc-block-icon"></span>
+                  <span data-i18n="cta.downloadLatest">Tải bản mới nhất</span></a
+                >`;
       }, 2000);
     }
   }
