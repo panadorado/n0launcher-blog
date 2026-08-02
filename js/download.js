@@ -63,7 +63,11 @@ document.getElementById('installLauncher').addEventListener('click', async (e) =
   try {
     const os = await detectOS();
 
-    const res = await fetch('https://api.github.com/repos/panadorado/N0Launcher/releases/latest');
+    const res = await fetch('https://api.github.com/repos/panadorado/N0Launcher/releases/latest', {
+      headers: { 'User-Agent': 'Minecraft-Launcher' },
+      signal: AbortSignal.timeout(15_000), // 15 giây — tránh treo vô hạn nếu mạng lỗi
+    });
+
     if (!res.ok) throw new Error('Không lấy được release mới nhất');
     const release = await res.json();
 
@@ -72,7 +76,9 @@ document.getElementById('installLauncher').addEventListener('click', async (e) =
 
     // Phải tải hẳn về bộ nhớ (blob) trước — showSaveFilePicker cần dữ liệu thật để ghi ra file,
     // không thể chỉ đưa link như cách <a download> làm
-    const fileRes = await fetch(asset.browser_download_url);
+    const fileRes = await fetch(asset.browser_download_url, {
+      signal: AbortSignal.timeout(15_000),
+    });
     const blob = await fileRes.blob();
 
     await saveWithPicker(blob, asset.name);
