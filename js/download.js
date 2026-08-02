@@ -1,130 +1,84 @@
-// ============================================================
-// Nút "Tải bản mới nhất": gọi GitHub Releases API để lấy đúng bản
-// mới nhất, sau đó tải file cài đặt về — có hỏi nơi lưu nếu trình
-// duyệt hỗ trợ (Chrome/Edge). Chạy hoàn toàn phía client, không cần
-// Node.js hay backend nào khác.
-// ============================================================
-
-(function () {
-  var REPO = 'panadorado/N0Launcher';
-  var btn = document.getElementById('installLauncher');
-  if (!btn) return;
-
-  var textEl = btn.querySelector('[data-i18n="cta.downloadLatest"]');
-  var originalKey = 'cta.downloadLatest';
-
-  function t(key, vars) {
-    var lang = window.n0CurrentLang || 'vi';
-    var dict = (window.n0Translations && window.n0Translations[lang]) || {};
-    var str = dict[key] || key;
-    if (vars) {
-      Object.keys(vars).forEach(function (k) {
-        str = str.replace('{' + k + '}', vars[k]);
-      });
-    }
-    return str;
-  }
-
-  function setLabel(text) {
-    if (textEl) textEl.textContent = text;
-  }
-
-  function resetLabel() {
-    setLabel(t(originalKey));
-  }
-
-  // Lấy thông tin bản phát hành mới nhất qua GitHub REST API
-  // (KHÔNG dùng URL trang /releases/latest — đó là HTML, không phải JSON)
-  async function getLatestRelease() {
-    var res = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest', {
-      headers: { Accept: 'application/vnd.github+json' },
-      signal: AbortSignal.timeout(15000), // 15s — tránh treo vô hạn nếu mạng lỗi
-    });
-    if (!res.ok) throw new Error('Không lấy được thông tin bản phát hành mới nhất (' + res.status + ')');
-    return res.json();
-  }
-
-  // Chọn asset phù hợp nhất trong danh sách file đính kèm của release
-  // (ưu tiên các định dạng cài đặt Windows phổ biến, xây bằng electron-builder)
-  function pickBestAsset(assets) {
-    if (!assets || !assets.length) return null;
-    var priority = ['.exe', '.msi', '.zip', '.dmg', '.appimage'];
-    for (var i = 0; i < priority.length; i++) {
-      var found = assets.find(function (a) {
-        return a.name.toLowerCase().endsWith(priority[i]);
-      });
-      if (found) return found;
-    }
-    return assets[0];
-  }
-
-  // Tải file nhị phân về máy. Nếu trình duyệt hỗ trợ File System Access API
-  // (Chrome/Edge, cần HTTPS) sẽ hiện hộp thoại cho người dùng chọn thư mục +
-  // tên file để lưu. Các trình duyệt khác (Firefox/Safari) không cho website
-  // mở hộp thoại chọn thư mục vì lý do bảo mật của chính trình duyệt — trường
-  // hợp đó sẽ tự lưu vào thư mục Downloads mặc định, đây là giới hạn nền tảng
-  // chứ không phải lỗi của trang.
-  async function saveBlob(blob, suggestedName) {
-    if (window.showSaveFilePicker) {
-      var handle = await window.showSaveFilePicker({ suggestedName: suggestedName });
-      var writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    }
-    var blobUrl = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = suggestedName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(blobUrl);
-  }
-
-  btn.addEventListener('click', async function (event) {
-    event.preventDefault(); // chặn điều hướng mặc định tới href dự phòng, tự xử lý bằng JS
-
-    btn.style.pointerEvents = 'none';
-    btn.style.opacity = '0.75';
-    setLabel(t('download.checking'));
-
+// 1. Đoán hệ điều hành của người dùng
+async function detectOS() {
+  if (navigator.userAgentData) {
     try {
-      var release = await getLatestRelease();
-      var asset = pickBestAsset(release.assets);
-      if (!asset) throw new Error('Bản phát hành mới nhất không có file cài đặt đính kèm');
-
-      setLabel(t('download.downloading', { version: release.tag_name }));
-
-      var res = await fetch(asset.browser_download_url, {
-        signal: AbortSignal.timeout(180000), // 3 phút — file cài đặt có thể khá nặng
-      });
-      if (!res.ok) throw new Error('Tải thất bại: ' + res.status);
-      var blob = await res.blob();
-
-      // Người dùng bấm Huỷ ở hộp thoại chọn nơi lưu -> AbortError, coi như huỷ tải, không phải lỗi
-      try {
-        await saveBlob(blob, asset.name);
-        setLabel(t('download.done'));
-      } catch (saveErr) {
-        if (saveErr.name === 'AbortError') {
-          resetLabel();
-        } else {
-          throw saveErr;
-        }
-      }
-    } catch (err) {
-      console.error('[N0Launcher] Tải bản mới nhất thất bại:', err);
-      setLabel(t('download.error'));
-      // Không lấy/tải được (mạng lỗi, CORS bị chặn bởi phía GitHub, v.v.)
-      // -> mở thẳng trang Releases để người dùng tự tải, không để họ mắc kẹt
-      window.open('https://github.com/' + REPO + '/releases/latest', '_blank', 'noopener');
-    } finally {
-      setTimeout(function () {
-        resetLabel();
-        btn.style.pointerEvents = '';
-        btn.style.opacity = '';
-      }, 3000);
+      const { platform } = await navigator.userAgentData.getHighEntropyValues(['platform']);
+      if (platform) return platform.toLowerCase();
+    } catch (e) {
+      /* rơi xuống fallback bên dưới */
     }
-  });
-})();
+  }
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('win')) return 'windows';
+  if (ua.includes('mac')) return 'macos';
+  if (ua.includes('android')) return 'android';
+  if (ua.includes('linux')) return 'linux';
+  return 'unknown';
+}
+
+// 2. Ứng với mỗi OS, ưu tiên đuôi file nào trong assets của release
+const EXT_BY_OS = {
+  windows: ['.exe', '.msi'],
+  macos: ['.dmg', '.pkg'],
+  linux: ['.appimage', '.deb', '.rpm'],
+};
+
+function pickAssetForOS(assets, os) {
+  const exts = EXT_BY_OS[os];
+  if (!exts) return null;
+  for (const ext of exts) {
+    const found = assets.find((a) => a.name.toLowerCase().endsWith(ext));
+    if (found) return found;
+  }
+  return null;
+}
+
+// 3. Tải file về dạng blob, rồi mở hộp thoại chọn nơi lưu nếu trình duyệt hỗ trợ
+async function saveWithPicker(blob, suggestedName) {
+  if (window.showSaveFilePicker) {
+    // Chrome / Edge — mở hộp thoại thật, người dùng tự chọn thư mục + tên file
+    const handle = await window.showSaveFilePicker({ suggestedName });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
+  }
+  // Firefox / Safari — không có quyền mở hộp thoại chọn thư mục (giới hạn của chính trình duyệt)
+  // -> rơi về cách cũ: tự lưu vào thư mục Downloads mặc định
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(blobUrl);
+}
+
+// 4. Gắn vào nút bấm
+document.getElementById('installLauncher').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const btn = e.currentTarget;
+
+  try {
+    const os = await detectOS();
+
+    const res = await fetch('https://api.github.com/repos/panadorado/N0Launcher/releases/latest');
+    if (!res.ok) throw new Error('Không lấy được release mới nhất');
+    const release = await res.json();
+
+    const asset = pickAssetForOS(release.assets, os);
+    if (!asset) throw new Error('Không có bản cài phù hợp cho hệ điều hành này');
+
+    // Phải tải hẳn về bộ nhớ (blob) trước — showSaveFilePicker cần dữ liệu thật để ghi ra file,
+    // không thể chỉ đưa link như cách <a download> làm
+    const fileRes = await fetch(asset.browser_download_url);
+    const blob = await fileRes.blob();
+
+    await saveWithPicker(blob, asset.name);
+  } catch (err) {
+    if (err.name === 'AbortError') return; // người dùng tự bấm Huỷ ở hộp thoại -> không phải lỗi, im lặng
+    console.error(err);
+    window.open('https://github.com/panadorado/N0Launcher/releases/latest', '_blank');
+  }
+});
