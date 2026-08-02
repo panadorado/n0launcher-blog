@@ -84,9 +84,11 @@ async function saveWithPicker(blob, suggestedName) {
   URL.revokeObjectURL(blobUrl);
 }
 
+const btn = document.getElementById('installLauncher');
+
 // 4. Hàm chính: tải bản mới nhất
+// 4. Hàm chính: tải bản mới nhất (Cách 1 - ổn định nhất)
 async function downloadLatestLauncher() {
-  const btn = document.getElementById('installLauncher');
   const originalText = btn?.textContent;
 
   try {
@@ -114,23 +116,22 @@ async function downloadLatestLauncher() {
 
     if (btn) btn.textContent = `Đang tải ${asset.name}...`;
 
-    // Tải file về dạng blob
-    const fileRes = await fetch(asset.browser_download_url, {
-      signal: AbortSignal.timeout(120000), // 2 phút (file ~100MB)
-    });
+    // Cách tải ổn định: tạo thẻ <a> và click
+    const a = document.createElement('a');
+    a.href = asset.browser_download_url;
+    a.download = asset.name; // gợi ý tên file
+    a.target = '_blank'; // phòng trình duyệt chặn
+    a.rel = 'noopener noreferrer';
 
-    if (!fileRes.ok) throw new Error('Tải file thất bại');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 
-    const blob = await fileRes.blob();
-
-    // Mở hộp thoại lưu file
-    await saveWithPicker(blob, asset.name);
-
-    if (btn) btn.textContent = 'Tải thành công!';
+    if (btn) btn.textContent = 'Đã bắt đầu tải!';
   } catch (err) {
     console.error(err);
 
-    // Nếu người dùng huỷ hộp thoại thì im lặng
+    // Nếu người dùng huỷ thì im lặng
     if (err.name === 'AbortError') return;
 
     // Fallback: mở trang releases
@@ -146,7 +147,7 @@ async function downloadLatestLauncher() {
 }
 
 // 5. Gắn sự kiện vào nút
-document.getElementById('installLauncher')?.addEventListener('click', (e) => {
+btn?.addEventListener('click', async (e) => {
   e.preventDefault();
-  downloadLatestLauncher();
+  await downloadLatestLauncher();
 });
