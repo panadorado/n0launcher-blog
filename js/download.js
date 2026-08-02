@@ -84,7 +84,7 @@ async function downloadLatestLauncher() {
 
     // Cách tải ổn định: tạo thẻ <a> và click (không bị CORS)
     const a = document.createElement('a');
-    a.href = asset.browser_download_url;
+    a.href = `https://github.com/panadorado/N0Launcher/releases/download/${release.tag_name}/${asset.name}`;
     a.download = asset.name;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
