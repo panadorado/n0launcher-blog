@@ -101,9 +101,9 @@ async function downloadLatestLauncher() {
     const res = await fetch('https://api.github.com/repos/panadorado/N0Launcher/releases/latest', {
       headers: {
         Accept: 'application/json',
+        crossorigin: true,
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': true,
-        crossorigin: true,
         'User-Agent': 'Minecraft-Launcher',
       },
       signal: AbortSignal.timeout(15000),
