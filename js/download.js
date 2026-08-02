@@ -19,22 +19,18 @@ async function detectOS() {
 // 2. Chọn asset phù hợp theo OS (ưu tiên Setup trên Windows)
 function pickAssetForOS(assets, os, version) {
   if (os === 'windows') {
-    // Ưu tiên bản Setup theo version
     const setupName = `N0Launcher-Setup-${version}.exe`;
     const setup = assets.find((a) => a.name === setupName);
     if (setup) return setup;
 
-    // Fallback: bất kỳ file .exe nào chứa Setup
     const anySetup = assets.find(
       (a) => a.name.toLowerCase().includes('setup') && a.name.toLowerCase().endsWith('.exe')
     );
     if (anySetup) return anySetup;
 
-    // Fallback cuối: file .exe portable
     return assets.find((a) => a.name.toLowerCase().endsWith('.exe'));
   }
 
-  // Các hệ khác (nếu sau này có)
   const EXT_BY_OS = {
     macos: ['.dmg', '.pkg'],
     linux: ['.appimage', '.deb', '.rpm'],
@@ -53,7 +49,7 @@ const btn = document.getElementById('installLauncher');
 
 // 3. Hàm chính: tải bản mới nhất
 async function downloadLatestLauncher() {
-  const originalText = btn?.textContent;
+  const originalHTML = btn?.innerHTML; // lưu lại HTML gốc
 
   try {
     if (btn) {
@@ -61,7 +57,6 @@ async function downloadLatestLauncher() {
       btn.textContent = 'Đang kiểm tra phiên bản...';
     }
 
-    // Lấy release mới nhất
     const res = await fetch('https://api.github.com/repos/panadorado/N0Launcher/releases/latest', {
       headers: {
         'User-Agent': 'Minecraft-Launcher',
@@ -72,7 +67,7 @@ async function downloadLatestLauncher() {
     if (!res.ok) throw new Error('Không lấy được thông tin release mới nhất');
 
     const release = await res.json();
-    const version = release.tag_name.replace(/^v/, ''); // "1.0.5"
+    const version = release.tag_name.replace(/^v/, '');
     const os = await detectOS();
 
     const asset = pickAssetForOS(release.assets, os, version);
@@ -82,9 +77,9 @@ async function downloadLatestLauncher() {
 
     if (btn) btn.textContent = `Đang tải ${asset.name}...`;
 
-    // Cách tải ổn định: tạo thẻ <a> và click (không bị CORS)
+    // Cách tải ổn định: tạo thẻ <a> và click
     const a = document.createElement('a');
-    a.href = `https://github.com/panadorado/N0Launcher/releases/download/${release.tag_name}/${asset.name}`;
+    a.href = asset.browser_download_url; // dùng URL chính thức từ GitHub
     a.download = asset.name;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
@@ -95,20 +90,18 @@ async function downloadLatestLauncher() {
 
     if (btn) btn.textContent = 'Đã bắt đầu tải!';
   } catch (err) {
-    console.error(err);
+    console.error('[N0Launcher] Tải bản mới nhất thất bại:', err);
 
-    // Nếu người dùng huỷ thì im lặng
     if (err.name === 'AbortError') return;
 
-    // Fallback: mở trang releases
+    // Fallback
     window.open('https://github.com/panadorado/N0Launcher/releases/latest', '_blank');
   } finally {
     if (btn) {
       btn.disabled = false;
       setTimeout(() => {
-        btn.innerHTML = `<span class="mc-block-icon"></span>
-                  <span data-i18n="cta.downloadLatest">Tải bản mới nhất</span></a
-                >`;
+        // Khôi phục lại HTML gốc của nút
+        btn.innerHTML = originalHTML || 'Tải bản mới nhất';
       }, 2000);
     }
   }
