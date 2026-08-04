@@ -77,6 +77,7 @@ body {
   padding: 10px 10px;
   border: 1px solid rgba(63, 63, 70, 0.5);
   background-color: rgba(39, 39, 42, 0.4);
+  border-radius: 10px;
 }
 
 a {
@@ -326,8 +327,9 @@ header.nav {
 
 /* ---------- HERO ---------- */
 .hero {
-  padding: 35px 0 40px;
+  padding: 24px 28px;
 }
+
 .hero-grid {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
